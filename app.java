@@ -56,21 +56,23 @@ public class app extends Application {
     centerPanel.setPrefWidth(500);
     rightPanel.setPrefWidth(280);
     
+  
     BorderPane mainLayout = new BorderPane();
     mainLayout.setCenter(contentArea);
     mainLayout.setBottom(bottomPanel);
     mainLayout.setTop(createHeaderBar());
     mainLayout.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+    mainLayout.setStyle("-fx-background-color: linear-gradient(to right, #040D43, #7F8EE3);");
     
     Scene scene = new Scene(mainLayout, 1200, 800);
-    scene.setFill(Color.web("#f5f5f5"));
+    scene.setFill(Color.web("#040D43"));
     primaryStage.setScene(scene);
     primaryStage.show();
     
     bracketView.getChildren().clear();
-    Label emptyLabel = new Label("No teams added yet.\nClick '+ Add Team' to add participants.");
+    Label emptyLabel = new Label("No teams added yet.\nClick 'ADD' to add participants.");
     emptyLabel.setFont(Font.font("Arial", 14));
-    emptyLabel.setTextFill(Color.web("#7f8c8d"));
+    emptyLabel.setTextFill(Color.web("#E0E6ED"));
     emptyLabel.setAlignment(Pos.CENTER);
     bracketView.getChildren().add(emptyLabel);
     
@@ -80,24 +82,16 @@ public class app extends Application {
     private HBox createHeaderBar() {
         HBox header = new HBox();
         header.setPadding(new Insets(15));
-        header.setStyle("-fx-background-color: linear-gradient(to right, #2c3e50, #3498db);");
+        header.setStyle("-fx-background-color: linear-gradient(to right, #040D43, #7F8EE3);");
         
         Label title = new Label("🏆 INTRAMURAL BRACKET MAKER");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        title.setTextFill(Color.WHITE);
-        
-        Button loadBtn = createStyledButton("📂 Load Bracket", "#3498db");
-        Button saveBtn = createStyledButton("💾 Save Bracket", "#27ae60");
-        Button exitBtn = createStyledButton("✖ Exit", "#e74c3c");
-
-        loadBtn.setOnAction(e -> loadBracket());
-        saveBtn.setOnAction(e -> saveBracket());
-        exitBtn.setOnAction(e -> System.exit(0));   
+        title.setTextFill(Color.web("#FFD862"));
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        header.getChildren().addAll(title, spacer, loadBtn, saveBtn, exitBtn);
+        header.getChildren().addAll(title, spacer);
         header.setAlignment(Pos.CENTER_LEFT);
         
         return header;
@@ -107,8 +101,8 @@ public class app extends Application {
     participantsList.getChildren().clear();
     
     if (teams.length == 0) {
-        Label emptyLabel = new Label("No teams added yet.\nClick '+ Add Team' to add.");
-        emptyLabel.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 12px;");
+        Label emptyLabel = new Label("There are no participants yet.\nClick 'ADD' to add participants.");
+        emptyLabel.setStyle("-fx-text-fill: #E0E6ED; -fx-font-size: 12px;");
         participantsList.getChildren().add(emptyLabel);
         return;
     }
@@ -124,11 +118,11 @@ public class app extends Application {
     private VBox createParticipantsPanel() {
         VBox panel = new VBox(10);
         panel.setPadding(new Insets(15));
-        panel.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5;");
+        panel.setStyle("-fx-background-color: #040D43; -fx-border-color: #7F8EE3; -fx-border-radius: 5; -fx-background-radius: 5;");
         
         Label title = new Label("PARTICIPANTS");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        title.setTextFill(Color.web("#2c3e50"));
+        title.setTextFill(Color.web("#FFD862"));
         
         participantsList = new VBox(5);
         participantsList.setPadding(new Insets(5));
@@ -138,20 +132,33 @@ public class app extends Application {
         ScrollPane scrollPane = new ScrollPane(participantsList);
         scrollPane.setFitToWidth(true);
         scrollPane.setPrefHeight(400);
-        scrollPane.setStyle("-fx-background: white; -fx-border-color: #ddd;");
+        scrollPane.setStyle("-fx-background: #152055; -fx-border-color: #7F8EE3;");
         
-        Button addTeamBtn = createStyledButton("+ Add Team", "#3498db");
-        Button removeTeamBtn = createStyledButton("- Remove Selected", "#e74c3c");
-        
+        Button addTeamBtn = createStyledButton("ADD", "#7F8EE3");
+        Button removeTeamBtn = createStyledButton("REMOVE", "#e74c3c");
+
+        String addNormal  = "-fx-background-color: #7F8EE3; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+        String addHover   = "-fx-background-color: #5a6abf; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+
+        String remNormal  = "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+        String remHover   = "-fx-background-color: #c0392b; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+
+
+        addTeamBtn.setStyle(addNormal);
+        removeTeamBtn.setStyle(remNormal);
+        addTeamBtn.setOnMouseEntered(e -> addTeamBtn.setStyle(addHover));
+        addTeamBtn.setOnMouseExited(e -> addTeamBtn.setStyle(addNormal));
+        removeTeamBtn.setOnMouseEntered(e -> removeTeamBtn.setStyle(remHover));
+        removeTeamBtn.setOnMouseExited(e -> removeTeamBtn.setStyle(remNormal));
         addTeamBtn.setOnAction(e -> addTeam());
         removeTeamBtn.setOnAction(e -> removeSelectedTeams());
-        
+
         HBox buttonBox = new HBox(10, addTeamBtn, removeTeamBtn);
         buttonBox.setAlignment(Pos.CENTER);
         
         Label tip = new Label("Quick Tip: Add participants by checking the box above");
         tip.setFont(Font.font("Arial", 10));
-        tip.setTextFill(Color.web("#7f8c8d"));
+        tip.setTextFill(Color.web("#E0E6ED"));
         tip.setWrapText(true);
         
         panel.getChildren().addAll(title, scrollPane, buttonBox, tip);
@@ -161,15 +168,15 @@ public class app extends Application {
    private VBox createBracketViewPanel() {
     VBox panel = new VBox(10);
     panel.setPadding(new Insets(15));
-    panel.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5;");
+    panel.setStyle("-fx-background-color: #040D43; -fx-border-color: #7F8EE3; -fx-border-radius: 5; -fx-background-radius: 5;");
     
     Label title = new Label("BRACKET VIEW");
     title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-    title.setTextFill(Color.web("#2c3e50"));
+    title.setTextFill(Color.web("#FFD862"));
     
     bracketView = new VBox(10);
     bracketView.setPadding(new Insets(10));
-    bracketView.setStyle("-fx-background-color: #fafafa;");
+    bracketView.setStyle("-fx-background-color: #152055 ; -FX-border-color: #7F8EE3; -fx-border-width: 2; -fx-border-radius: 5; -fx-background-radius: 5;");
     
     panel.getChildren().addAll(title, bracketView);
     
@@ -199,7 +206,7 @@ public class app extends Application {
                 bracketView.getChildren().clear();
                 Label msgLabel = new Label("Add at least 2 teams to start the tournament.\nCurrent teams: " + teams.length);
                 msgLabel.setFont(Font.font("Arial", 14));
-                msgLabel.setTextFill(Color.web("#7f8c8d"));
+                msgLabel.setTextFill(Color.web("#FFFFFF"));
                 msgLabel.setAlignment(Pos.CENTER);
                 bracketView.getChildren().add(msgLabel);
             }
@@ -245,26 +252,7 @@ public class app extends Application {
     teams = remainingTeams.toArray(new Team[0]);
     participantsList.getChildren().clear();
     
-    if (teams.length >= 2) {
-        tournament = new TournamentBracket(teams, bracketTypeCombo.getValue());
-        updateBracketView();
-    } else if (teams.length == 1) {
-        bracketView.getChildren().clear();
-        Label msgLabel = new Label("Need at least 2 teams to start the tournament.\nAdd one more team.");
-        msgLabel.setFont(Font.font("Arial", 14));
-        msgLabel.setTextFill(Color.web("#7f8c8d"));
-        msgLabel.setAlignment(Pos.CENTER);
-        bracketView.getChildren().add(msgLabel);
-        tournament = new TournamentBracket(teams, bracketTypeCombo.getValue());
-    } else {
-        bracketView.getChildren().clear();
-        Label msgLabel = new Label("Add at least 2 teams to start the tournament.\nClick '+ Add Team' to add participants.");
-        msgLabel.setFont(Font.font("Arial", 14));
-        msgLabel.setTextFill(Color.web("#7f8c8d"));
-        msgLabel.setAlignment(Pos.CENTER);
-        bracketView.getChildren().add(msgLabel);
-        tournament = new TournamentBracket(new Team[0], bracketTypeCombo.getValue());
-    }
+    
     
     for (Team team : teams) {
         CheckBox cb = new CheckBox(team.getName());
@@ -280,28 +268,61 @@ public class app extends Application {
     private VBox createInformationPanel() {
         VBox panel = new VBox(10);
         panel.setPadding(new Insets(15));
-        panel.setStyle("-fx-background-color: white; -fx-border-color: #ddd; -fx-border-radius: 5; -fx-background-radius: 5;");
+        panel.setStyle("-fx-background-color: #040D43; -fx-border-color: #7F8EE3; -fx-border-radius: 5; -fx-background-radius: 5;");
         
         Label title = new Label("BRACKET INFORMATION");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 14));
-        title.setTextFill(Color.web("#2c3e50"));
+        title.setTextFill(Color.web("#FFD862"));
         
         Label nameLabel = new Label("Bracket Name:");
-        nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
-        bracketNameField = new TextField("Untitled Bracket");
-        bracketNameField.setStyle("-fx-border-color: #ddd; -fx-border-radius: 3;");
+        nameLabel.setTextFill(Color.web("#FFFFFF"));
+        nameLabel.setStyle("fx-font-weight: bold; -fx-font-size: 12px;");
+        bracketNameField = new TextField("");
+        bracketNameField.setPromptText("Enter bracket name...");
+        bracketNameField.setStyle("-fx-background-color: #152055;-fx-text-fill: #E0E6ED; -fx-border-color: #7F8EE3; -fx-border-radius: 3;");
         
         Label typeLabel = new Label("Bracket Type:");
+        typeLabel.setTextFill(Color.web("#FFFFFF"));
         typeLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
+
         bracketTypeCombo = new ComboBox<>();
         bracketTypeCombo.getItems().addAll("Single Elimination", "Double Elimination", "Round Robin", "Swiss", "Free For All");
         bracketTypeCombo.setValue("Single Elimination");
-        bracketTypeCombo.setStyle("-fx-border-color: #ddd;");
+        bracketTypeCombo.setStyle("-fx-background-color: #152055; -fx-border-color: #7F8EE3; -fx-border-radius: 3;");
+        bracketTypeCombo.setCellFactory(listView -> new ListCell<String>() {
+        
+        @Override
+        protected void updateItem(String item, boolean empty) {
+        super.updateItem(item, empty);
+        if (empty || item == null) {
+            setText(null);
+            setStyle(null);
+        } else {
+            setText(item);
+            setStyle("-fx-text-fill: #E0E6ED; -fx-background-color: #152055;");
+        }
+    }
+});
 
-       bracketTypeCombo.setOnAction(e -> {
-    String selected = bracketTypeCombo.getValue();
-    System.out.println("Bracket type changed to: " + selected);
-    if (teams.length >= 2) {
+        bracketTypeCombo.setButtonCell(new ListCell<String>() {
+        @Override
+        protected void updateItem(String item, boolean empty) {
+        super.updateItem(item, empty);
+        if (empty || item == null) {
+            setText(null);
+            setStyle(null);
+        } else {
+            setText(item);
+           
+            setStyle("-fx-text-fill: #E0E6ED;");
+        }
+    }
+});
+
+        bracketTypeCombo.setOnAction(e -> {
+        String selected = bracketTypeCombo.getValue();
+        System.out.println("Bracket type changed to: " + selected);
+        if (teams.length >= 2) {
         tournament = new TournamentBracket(teams, selected);
         updateBracketView();
         updateProgress();
@@ -309,28 +330,63 @@ public class app extends Application {
 });
         
         Label sportLabel = new Label("Sport/Game:");
+        sportLabel.setTextFill(Color.web("#FFFFFF"));
         sportLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
         sportField = new TextField("");
-        sportField.setStyle("-fx-border-color: #ddd;");
+        sportField.setPromptText("e.g. Basketball, Valorant...");
+        sportField.setStyle("-fx-background-color: #152055;-fx-text-fill: #E0E6ED; -fx-border-color: #7F8EE3; -fx-border-radius: 3;");
         
         Label descLabel = new Label("Bracket Description:");
+        descLabel.setTextFill(Color.web("#FFFFFF"));
         descLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px;");
         descriptionArea = new TextArea();
         descriptionArea.setPromptText("Enter tournament description...");
         descriptionArea.setPrefHeight(80);
-        descriptionArea.setStyle("-fx-border-color: #ddd;");
+        descriptionArea.setStyle(
+        "-fx-control-inner-background: #152055; " +
+        "-fx-background-color: transparent; " + 
+        "-fx-border-color: #7F8EE3; " +
+        "-fx-border-radius: 3; " +
+        "-fx-prompt-text-fill: #e0e6edc2; " +
+        "-fx-text-fill: #FFFFFF;" 
+);
         
         Label statusTitle = new Label("BRACKET STATUS:");
-        statusTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #e74c3c;");
+        statusTitle.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #FFD862;");
         statusLabel = new Label("PENDING");
-        statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #e74c3c;");
+        statusLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 13px; -fx-text-fill: #e74c3c;");
         
         Separator separator = new Separator();
         
-        Button saveBracketBtn = createStyledButton("SAVE BRACKET", "#27ae60");
+        Button saveBracketBtn = createStyledButton("SAVE BRACKET", "#7F8EE3");
         saveBracketBtn.setPrefWidth(Double.MAX_VALUE);
         saveBracketBtn.setOnAction(e -> saveBracket());
-        
+
+        Button loadBtn = createStyledButton("LOAD BRACKET", "#7F8EE3");
+        loadBtn.setPrefWidth(Double.MAX_VALUE);
+        loadBtn.setOnAction(e -> loadBracket());
+
+        Button exitBtn = createStyledButton("EXIT", "#e74c3c");
+        exitBtn.setPrefWidth(Double.MAX_VALUE);
+        exitBtn.setOnAction(e -> System.exit(0));
+
+        String blueNormal = "-fx-background-color: #7F8EE3; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+        String blueHover  = "-fx-background-color: #5a6abf; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+        String redNormal  = "-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+        String redHover   = "-fx-background-color: #c0392b; -fx-text-fill: white; -fx-padding: 8 16; -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: transparent; -fx-font-weight: bold;";
+
+        saveBracketBtn.setStyle(blueNormal);
+        loadBtn.setStyle(blueNormal);
+        exitBtn.setStyle(redNormal);
+        saveBracketBtn.setOnMouseEntered(e -> saveBracketBtn.setStyle(blueHover));
+        saveBracketBtn.setOnMouseExited(e -> saveBracketBtn.setStyle(blueNormal));
+
+        loadBtn.setOnMouseEntered(e -> loadBtn.setStyle(blueHover));
+        loadBtn.setOnMouseExited(e -> loadBtn.setStyle(blueNormal));
+
+        exitBtn.setOnMouseEntered(e -> exitBtn.setStyle(redHover));
+        exitBtn.setOnMouseExited(e -> exitBtn.setStyle(redNormal));
+
         Label tip = new Label("To save your bracket, click the 'Save Bracket' button. You will then be able to create an account where you can manage your bracket and start the tournament.");
         tip.setFont(Font.font("Arial", 10));
         tip.setTextFill(Color.web("#7f8c8d"));
@@ -342,7 +398,7 @@ public class app extends Application {
             sportLabel, sportField,
             descLabel, descriptionArea,
             statusTitle, statusLabel,
-            separator, saveBracketBtn, tip
+            separator,loadBtn, saveBracketBtn, exitBtn, tip
         );
         
         return panel;
@@ -351,24 +407,22 @@ public class app extends Application {
     private HBox createBottomProgressPanel() {
         HBox panel = new HBox(10);
         panel.setPadding(new Insets(10, 15, 10, 15));
-        panel.setStyle("-fx-background-color: #ecf0f1; -fx-border-color: #ddd; -fx-border-width: 1 0 0 0;");
+        panel.setStyle("-fx-background-color: linear-gradient(to right, #040D43, #7F8EE3); -fx-border-width: 1 0 0 0;");
         panel.setAlignment(Pos.CENTER_LEFT);
         
         Label progressTitle = new Label("Progress:");
         progressTitle.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        
+        progressTitle.setTextFill(Color.web("#FFFFFF"));
         progressBar = new ProgressBar(0);
         progressBar.setPrefWidth(300);
-        
         progressLabel = new Label("0% Complete");
+        progressLabel.setTextFill(Color.web("#FFFFFF"));
         progressLabel.setFont(Font.font("Arial", 11));
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        Button launchBtn = createStyledButton("EXIT | LAUNCH", "#3498db");
-        
-        panel.getChildren().addAll(progressTitle, progressBar, progressLabel, spacer, launchBtn);
+       panel.getChildren().addAll(progressTitle, progressBar, progressLabel, spacer);
         return panel;
     }
     
