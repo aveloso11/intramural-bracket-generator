@@ -8,7 +8,7 @@ public class ScoreMatrix {
         this.size = teams.length;
         this.scores = new int[size][size];
 
-        // INITIALIZE WITH -1 MEANING "NOT PLAYED YED"
+        // INITIALIZE WITH -1 MEANING "NOT PLAYED YET"
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                 scores[i][j] = -1;
@@ -18,11 +18,11 @@ public class ScoreMatrix {
 
     // RECORD MATCH RESULT
     public void recordMatch(int teamAId, int teamBId, int scoreA, int scoreB) {
-        if (teamAId >=0 && teamAId < size && teamBId >= 0 && teamBId < size) {
+        if (teamAId >= 0 && teamAId < size && teamBId >= 0 && teamBId < size) {
             scores[teamAId][teamBId] = scoreA;
             scores[teamBId][teamAId] = scoreB;
         } else {
-             System.out.println("Warning: Invalid team IDs: " + teamAId + ", " + teamBId);
+            System.out.println("Warning: Invalid team IDs: " + teamAId + ", " + teamBId);
         }
     }
 
@@ -61,11 +61,22 @@ public class ScoreMatrix {
         return total;
     }
 
+    // GET HEAD-TO-HEAD RECORD SUMMARY
+    public String getHeadToHead(int teamAId, int teamBId) {
+        if (!hasPlayed(teamAId, teamBId)) {
+            return teams[teamAId].getName() + " and " + teams[teamBId].getName() + " have not played yet.";
+        }
+        int scoreA = scores[teamAId][teamBId];
+        int scoreB = scores[teamBId][teamAId];
+        String winner = (scoreA > scoreB) ? teams[teamAId].getName() : teams[teamBId].getName();
+        return teams[teamAId].getName() + " " + scoreA + " - " + scoreB + " " + teams[teamBId].getName() + " → Winner: " + winner;
+    }
+
     // PRINT ENTIRE SCORE MATRIX
     public void printMatrix() {
         System.out.println("\n========== SCORE MATRIX ==========");
         System.out.print("       ");
-        for (int i= 0; i < size; i++) {
+        for (int i = 0; i < size; i++) {
             System.out.printf("%-12s", teams[i].getName());
         }
         System.out.println();
@@ -74,7 +85,7 @@ public class ScoreMatrix {
         for (int i = 0; i < size; i++) {
             System.out.printf("%-8s", teams[i].getName());
             for (int j = 0; j < size; j++) {
-                if (i==j) {
+                if (i == j) {
                     System.out.printf("%-12s", "---");
                 } else if (scores[i][j] == -1) {
                     System.out.printf("%-12s", "NOT PLAYED");
@@ -85,26 +96,5 @@ public class ScoreMatrix {
             System.out.println();
         }
         System.out.println("==================================\n");
-    }
-
-    public String getHeadToHead(int teamAId, int teamBId) {
-        if (!hasPlayed(teamAId, teamBId)) {
-            return teams[teamAId].getName() + " and " + teams[teamBId].getName() + " have not played yet. ";
-        }
-        int scoreA = scores[teamAId][teamBId];
-        int scoreB = scores[teamBId][teamAId];
-        String winner = (scoreA > scoreB) ? teams[teamAId].getName() : teams[teamBId].getName();
-        return teams[teamAId].getName() + " " + scoreA + " - " + scoreB + " " + teams[teamBId].getName() + "  → Winner: " + winner;
-    }
-
-    // GET HEAD-TO-HEAD RECORD SUMMARY 
-    public String getHeadtoHead(int teamAId, int teamBId) {
-        if (!hasPlayed(teamAId, teamBId)) {
-            return teams[teamAId].getName() + " and " + teams[teamBId].getName() + " have not played yet. ";
-        }
-        int scoreA = scores [teamAId][teamBId];
-        int scoreB = scores [teamBId][teamAId];
-        String winner = (scoreA > scoreB) ? teams[teamAId].getName() : teams[teamBId].getName();
-        return teams[teamAId].getName() + " " + scoreA + " - " + scoreB + " " + teams[teamBId].getName() + " → Winner: " + winner;
     }
 }
