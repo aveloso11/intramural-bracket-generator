@@ -6,32 +6,52 @@ public class TournamentBracket {
     private ScoreMatrix scoreMatrix;
     private int totalRounds;
     private List<Match> allMatches;
-    private String tournamentType;
+    private TournamentType tournamentType;
     private List<Match> losersBracketMatches;
     private Match grandFinals;
+    private Map<Match, Match> winnerToLoserMatch; // Maps winners bracket match to its corresponding losers bracket match
 
     public TournamentBracket(Team[] teams) {
-        this(teams, "Single Elimination");
+        this(teams, TournamentType.SINGLE_ELIMINATION);
     }
 
-    public TournamentBracket(Team[] teams, String type) {
+    public TournamentBracket(Team[] teams, TournamentType type) {
         this.teams = teams;
         this.scoreMatrix = new ScoreMatrix(teams);
         this.tournamentType = type;
         this.allMatches = new ArrayList<Match>();
+        this.winnerToLoserMatch = new HashMap<>();
         
-        if (type.equals("Single Elimination")) {
+        if (type == TournamentType.SINGLE_ELIMINATION) {
             buildSingleElimination(teams);
-        } else if (type.equals("Round Robin")) {
+        } else if (type == TournamentType.ROUND_ROBIN) {
             buildRoundRobin(teams);
-        } else if (type.equals("Double Elimination")) {
+        } else if (type == TournamentType.DOUBLE_ELIMINATION) {
             buildDoubleElimination(teams);
-        } else if (type.equals("Swiss System")) {
+        } else if (type == TournamentType.SWISS) {
             buildSwissSystem(teams);
-        } else if (type.equals("Free For All")) {
+        } else if (type == TournamentType.FREE_FOR_ALL) {
             buildFreeForAll(teams);
         } else {
             buildSingleElimination(teams);
+        }
+    }
+
+    // String constructor for backward compatibility
+    public TournamentBracket(Team[] teams, String type) {
+        this(teams, convertToTournamentType(type));
+    }
+
+    private static TournamentType convertToTournamentType(String type) {
+        if (type == null) return TournamentType.SINGLE_ELIMINATION;
+        
+        switch(type) {
+            case "Single Elimination": return TournamentType.SINGLE_ELIMINATION;
+            case "Double Elimination": return TournamentType.DOUBLE_ELIMINATION;
+            case "Round Robin": return TournamentType.ROUND_ROBIN;
+            case "Swiss System": return TournamentType.SWISS;
+            case "Free For All": return TournamentType.FREE_FOR_ALL;
+            default: return TournamentType.SINGLE_ELIMINATION;
         }
     }
 
@@ -87,20 +107,26 @@ public class TournamentBracket {
         
         allMatches.clear();
         losersBracketMatches = new ArrayList<>();
-        this.totalRounds = numRounds + 1;
+        winnerToLoserMatch.clear();
+        this.totalRounds = (numRounds * 2);
         
         // Winners Bracket
         List<Match> winnersRound = new ArrayList<>();
+        List<Match> allWinnersMatches = new ArrayList<>();
+        
+        // Create first round winners bracket matches
         for (int i = 0; i < bracketSize; i += 2) {
             Match match = new Match(1);
             if (i < numTeams) match.setTeam1(teams[i]);
             if (i + 1 < numTeams) match.setTeam2(teams[i + 1]);
             if (match.getTeam1() != null || match.getTeam2() != null) {
                 winnersRound.add(match);
+                allWinnersMatches.add(match);
                 allMatches.add(match);
             }
         }
         
+        // Build rest of winners bracket
         int round = 2;
         while (winnersRound.size() > 1) {
             List<Match> nextRound = new ArrayList<>();
@@ -110,6 +136,7 @@ public class TournamentBracket {
                     parentMatch.setLeftChild(winnersRound.get(i));
                     parentMatch.setRightChild(winnersRound.get(i + 1));
                     nextRound.add(parentMatch);
+                    allWinnersMatches.add(parentMatch);
                     allMatches.add(parentMatch);
                 } else {
                     nextRound.add(winnersRound.get(i));
@@ -121,10 +148,65 @@ public class TournamentBracket {
         
         Match winnersFinal = winnersRound.isEmpty() ? null : winnersRound.get(0);
         
+        // Create losers bracket matches and link them to winners bracket matches
+        int losersRoundNum = 2;
+        List<Match> previousLosersRound = new ArrayList<>();
+        
+        // For each winners bracket round, create corresponding losers bracket matches
+        for (int r = 1; r <= numRounds - 1; r++) {
+            int matchesInThisRound = (int) Math.pow(2, numRounds - r - 1);
+            if (matchesInThisRound < 1) matchesInThisRound = 1;
+            
+            List<Match> thisLosersRound = new ArrayList<>();
+            for (int i = 0; i < matchesInThisRound; i++) {
+                Match losersMatch = new Match(losersRoundNum);
+                thisLosersRound.add(losersMatch);
+                losersBracketMatches.add(losersMatch);
+                allMatches.add(losersMatch);
+            }
+            
+            // Link this losers round to previous losers round
+            if (!previousLosersRound.isEmpty()) {
+                for (int i = 0; i < thisLosersRound.size() && i < previousLosersRound.size() / 2; i++) {
+                    if (i * 2 + 1 < previousLosersRound.size()) {
+                        thisLosersRound.get(i).setLeftChild(previousLosersRound.get(i * 2));
+                        thisLosersRound.get(i).setRightChild(previousLosersRound.get(i * 2 + 1));
+                    }
+                }
+            }
+            
+            previousLosersRound = thisLosersRound;
+            losersRoundNum++;
+        }
+        
+        // Link winners bracket matches to losers bracket matches
+        for (int i = 0; i < allWinnersMatches.size(); i++) {
+            Match winnersMatch = allWinnersMatches.get(i);
+            int winnersRoundNum = winnersMatch.getRound();
+            
+            // Find corresponding losers bracket match
+            int targetLosersRound = winnersRoundNum + 1;
+            int matchIndex = i / 2;
+            
+            for (Match losersMatch : losersBracketMatches) {
+                if (losersMatch.getRound() == targetLosersRound) {
+                    if (!winnerToLoserMatch.containsKey(winnersMatch)) {
+                        winnerToLoserMatch.put(winnersMatch, losersMatch);
+                        break;
+                    }
+                }
+            }
+        }
+        
         // Grand Finals
+        Match losersFinal = previousLosersRound.isEmpty() ? null : previousLosersRound.get(0);
+        
         if (winnersFinal != null) {
-            grandFinals = new Match(numRounds + 1);
+            grandFinals = new Match(totalRounds);
             grandFinals.setLeftChild(winnersFinal);
+            if (losersFinal != null) {
+                grandFinals.setRightChild(losersFinal);
+            }
             allMatches.add(grandFinals);
             this.root = grandFinals;
         } else {
@@ -207,7 +289,7 @@ public class TournamentBracket {
         Team team2 = match.getTeam2();
         scoreMatrix.recordMatch(team1.getId(), team2.getId(), score1, score2);
 
-        if (tournamentType.equals("Single Elimination") || tournamentType.equals("Double Elimination")) {
+        if (tournamentType == TournamentType.SINGLE_ELIMINATION || tournamentType == TournamentType.DOUBLE_ELIMINATION) {
             propagateWinnerUp(match, winner);
         }
 
@@ -215,6 +297,30 @@ public class TournamentBracket {
     }
 
     private void propagateWinnerUp(Match currentMatch, Team winner) {
+        // Get the loser
+        Team loser = null;
+        if (currentMatch.getTeam1() == winner) {
+            loser = currentMatch.getTeam2();
+        } else if (currentMatch.getTeam2() == winner) {
+            loser = currentMatch.getTeam1();
+        }
+        
+        // Handle losers bracket - send loser to corresponding losers bracket match
+        if (tournamentType == TournamentType.DOUBLE_ELIMINATION && loser != null && currentMatch.getRound() < totalRounds - 1) {
+            Match losersMatch = winnerToLoserMatch.get(currentMatch);
+            if (losersMatch != null) {
+                if (losersMatch.getTeam1() == null) {
+                    losersMatch.setTeam1(loser);
+                    System.out.println("→ Loser " + loser.getName() + " sent to losers bracket match: " + losersMatch);
+                } else if (losersMatch.getTeam2() == null) {
+                    losersMatch.setTeam2(loser);
+                    System.out.println("→ Loser " + loser.getName() + " sent to losers bracket match: " + losersMatch);
+                }
+                checkAndCompleteMatch(losersMatch);
+            }
+        }
+        
+        // Handle winners bracket propagation
         for (Match match : allMatches) {
             if (match.getLeftChild() == currentMatch) {
                 match.setTeam1(winner);
@@ -262,7 +368,9 @@ public class TournamentBracket {
     }
 
     public Team getTournamentWinner() {
-        if (tournamentType.equals("Round Robin") || tournamentType.equals("Swiss System") || tournamentType.equals("Free For All")) {
+        if (tournamentType == TournamentType.ROUND_ROBIN || 
+            tournamentType == TournamentType.SWISS || 
+            tournamentType == TournamentType.FREE_FOR_ALL) {
             Team champion = null;
             int mostWins = -1;
             for (Team team : teams) {
@@ -294,7 +402,7 @@ public class TournamentBracket {
 
     public void printBracket() {
         System.out.println("\n" + "=".repeat(60));
-        System.out.println("🏆 TOURNAMENT BRACKET - " + tournamentType + " 🏆");
+        System.out.println("🏆 TOURNAMENT BRACKET - " + tournamentType.getDisplayName() + " 🏆");
         System.out.println("=".repeat(60));
         for (int round = 1; round <= totalRounds; round++) {
             System.out.println("\n📍 ROUND " + round + ":");

@@ -863,15 +863,30 @@ public class app extends Application {
         fontSize = 8;
     }
     
-    double totalHeight = totalSlots * rowHeight + 100;
+    double winnersHeight = totalSlots * rowHeight + 80;
     double totalWidth = winnersRounds * colWidth + 200;
     
+    // Get losers bracket matches
+    List<Match> losersMatches = tournament.getLosersBracketMatches();
+    int losersMaxRound = 0;
+    if (losersMatches != null && !losersMatches.isEmpty()) {
+        for (Match m : losersMatches) {
+            if (m.getRound() > losersMaxRound) losersMaxRound = m.getRound();
+        }
+    }
+    
+    double losersHeight = (totalSlots / 2) * (rowHeight - 10) + 80;
+    double totalHeight = winnersHeight + 100 + (losersMaxRound > 0 ? losersHeight + 80 : 0);
+    
+    // Single pane for BOTH brackets
     Pane bracketPane = new Pane();
     bracketPane.setPrefSize(Math.max(totalWidth, 800), Math.max(totalHeight, 500));
     bracketPane.setStyle("-fx-background-color: #f5f5f5;");
     
     Canvas canvas = new Canvas(totalWidth, totalHeight);
     GraphicsContext gc = canvas.getGraphicsContext2D();
+    
+    // Draw Winners Bracket lines (green)
     gc.setStroke(Color.web("#27ae60"));
     gc.setLineWidth(2);
     
@@ -909,8 +924,64 @@ public class app extends Application {
         }
     }
     
+    // Draw Losers Bracket lines (red) if there are losers matches
+    if (losersMatches != null && !losersMatches.isEmpty()) {
+        gc.setStroke(Color.web("#e74c3c"));
+        gc.setLineWidth(2);
+        
+        Map<Integer, List<Match>> losersByRound = new HashMap<>();
+        for (Match m : losersMatches) {
+            losersByRound.computeIfAbsent(m.getRound(), k -> new ArrayList<>()).add(m);
+        }
+        
+        double yOffset = winnersHeight + 60;
+        
+        for (int round = 2; round < losersMaxRound; round++) {
+            List<Match> currentMatches = losersByRound.get(round);
+            List<Match> nextMatches = losersByRound.get(round + 1);
+            
+            if (currentMatches == null || nextMatches == null) continue;
+            
+            int matchesInRound = currentMatches.size();
+            int nextMatchesCount = nextMatches.size();
+            int spacing = (totalSlots / 2) / matchesInRound;
+            int nextSpacing = (totalSlots / 2) / nextMatchesCount;
+            
+            for (int i = 0; i < matchesInRound; i += 2) {
+                if (i + 1 >= matchesInRound) break;
+                
+                int row1 = (i * spacing) + (spacing / 2);
+                int row2 = ((i + 1) * spacing) + (spacing / 2);
+                int nextRow = (i / 2) * nextSpacing + (nextSpacing / 2);
+                
+                double x1 = (round - 2) * (colWidth - 30) + 120;
+                double x2 = (round - 1) * (colWidth - 30);
+                double connectorX = x1 + 40;
+                
+                double y1 = row1 * (rowHeight - 10) + yOffset + 10;
+                double y2 = row2 * (rowHeight - 10) + yOffset + 10;
+                double targetY = nextRow * (rowHeight - 10) + yOffset + 10;
+                
+                gc.strokeLine(x1, y1, connectorX, y1);
+                gc.strokeLine(x1, y2, connectorX, y2);
+                gc.strokeLine(connectorX, y1, connectorX, targetY);
+                gc.strokeLine(connectorX, y2, connectorX, targetY);
+                gc.strokeLine(connectorX, targetY, x2, targetY);
+            }
+        }
+    }
+    
     bracketPane.getChildren().add(canvas);
     
+    // Draw Winners Bracket Label
+    Label winnersLabel = new Label("🏆 WINNERS BRACKET 🏆");
+    winnersLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+    winnersLabel.setTextFill(Color.web("#27ae60"));
+    winnersLabel.setLayoutX(totalWidth / 2 - 80);
+    winnersLabel.setLayoutY(5);
+    bracketPane.getChildren().add(winnersLabel);
+    
+    // Draw Winners Bracket matches
     for (int round = 1; round <= winnersRounds; round++) {
         List<Match> matches = tournament.getMatchesByRound(round);
         if (matches.isEmpty()) continue;
@@ -923,7 +994,7 @@ public class app extends Application {
             Match match = matches.get(i);
             int rowIndex = (i * spacing) + (spacing / 2);
             double x = (round - 1) * colWidth + 10;
-            double y = rowIndex * rowHeight + 5;
+            double y = rowIndex * rowHeight + 30;
             
             VBox matchCard = createCompactMatchCard(match, round, i + 1, fontSize);
             matchCard.setLayoutX(x);
@@ -932,30 +1003,63 @@ public class app extends Application {
         }
     }
     
-    ScrollPane scrollPane = new ScrollPane();
-    scrollPane.setContent(bracketPane);
+    // Draw Losers Bracket if there are matches
+    if (losersMatches != null && !losersMatches.isEmpty()) {
+        double yOffset = winnersHeight + 60;
+        
+        // Draw Losers Bracket Label
+        Label losersLabel = new Label("💀 LOSERS BRACKET 💀");
+        losersLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+        losersLabel.setTextFill(Color.web("#e74c3c"));
+        losersLabel.setLayoutX(totalWidth / 2 - 75);
+        losersLabel.setLayoutY(yOffset - 30);
+        bracketPane.getChildren().add(losersLabel);
+        
+        Map<Integer, List<Match>> losersByRound = new HashMap<>();
+        for (Match m : losersMatches) {
+            losersByRound.computeIfAbsent(m.getRound(), k -> new ArrayList<>()).add(m);
+        }
+        
+        for (int round = 2; round <= losersMaxRound; round++) {
+            List<Match> matches = losersByRound.get(round);
+            if (matches == null) continue;
+            
+            int matchesInRound = matches.size();
+            int spacing = (totalSlots / 2) / matchesInRound;
+            if (spacing < 1) spacing = 1;
+            
+            for (int i = 0; i < matchesInRound; i++) {
+                Match match = matches.get(i);
+                int rowIndex = (i * spacing) + (spacing / 2);
+                double x = (round - 2) * (colWidth - 30) + 10;
+                double y = rowIndex * (rowHeight - 10) + yOffset + 10;
+                
+                VBox matchCard = createLosersMatchCard(match, fontSize);
+                matchCard.setLayoutX(x);
+                matchCard.setLayoutY(y);
+                bracketPane.getChildren().add(matchCard);
+            }
+        }
+    }
+    
+    // ONE ScrollPane for everything
+    ScrollPane scrollPane = new ScrollPane(bracketPane);
     scrollPane.setFitToWidth(false);
     scrollPane.setFitToHeight(false);
     scrollPane.setPrefViewportHeight(550);
-    scrollPane.setPrefViewportWidth(800);
+    scrollPane.setPrefViewportWidth(780);
     scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
     scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
     scrollPane.setStyle("-fx-background: #f5f5f5; -fx-border-color: #ddd;");
     
     bracketView.getChildren().clear();
     bracketView.getChildren().add(scrollPane);
-
-    Label separator = new Label("▼ ▼ ▼ LOSERS BRACKET ▼ ▼ ▼");
-    separator.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-    separator.setTextFill(Color.web("#e74c3c"));
-    separator.setAlignment(Pos.CENTER);
-    separator.setMaxWidth(Double.MAX_VALUE);
-    separator.setStyle("-fx-padding: 20 0 10 0;");
-    bracketView.getChildren().add(separator);
     
-    displayLosersBracket();
+    Team champion = tournament.getTournamentWinner();
+    if (champion != null) {
+        addChampionDisplay(champion);
+    }
 }
-
 // ========== LOSERS BRACKET WITH BINARY TREE ==========
 private void displayLosersBracket() {
     List<Match> losersMatches = tournament.getLosersBracketMatches();
